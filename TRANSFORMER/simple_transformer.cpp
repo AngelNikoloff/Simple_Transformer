@@ -441,39 +441,11 @@ public:
     amat last_attn;
     int rotary = 1;
 
-    void apply_rotary(amat& x)
-    {
-        double base_freq = 0.01;   // rotary frequency scale
-
-        int tokens = x.size();
-        int dim = x[0].size();
-
-        for (int i = 0; i < tokens; ++i)
-        {
-            for (int k = 0; k < dim - 1; k += 2)
-            {
-                double freq = base_freq * (k / 2 + 1);
-                double theta = i * freq;
-
-                double cos_t = std::cos(theta);
-                double sin_t = std::sin(theta);
-
-                double x1 = x[i][k];
-                double x2 = x[i][k + 1];
-
-                x[i][k] = x1 * cos_t - x2 * sin_t;
-                x[i][k + 1] = x1 * sin_t + x2 * cos_t;
-            }
-        }
-    }
-
     TAttentionALiBi() : embed_size(0), slope(1.0) {}
     void init(int _embed_size, double _slope = 1.0) { embed_size = _embed_size; slope = _slope; }
     amat forward(const amat& x)
     {
         last_input = x;
-
-        //apply_rotary(last_input); //  where to apply; at x?
 
         int T = x.size(), D = x[0].size();
         amat output(T, avec(D, 0.0));
@@ -487,7 +459,7 @@ public:
             {
                 double dot = 0.0;
                 for (int d = 0; d < D; ++d) dot += x[i][d] * x[j][d];
-                scores[j] = dot * scale - slope * (i - j); 
+                scores[j] = dot * scale - slope * (i - j); // (i - j) is relative position embeding
                 //scores[j] = dot * scale;
             }
 
